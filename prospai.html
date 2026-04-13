@@ -724,7 +724,7 @@ function renderContactsFull(contacts, filename) {
 
 // ─── API ANTHROPIC ───────────────────────────────────────────────────
 async function callClaude(prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -993,7 +993,7 @@ let activeCampaign = null;
 
 // ─── GMAIL VIA API ANTHROPIC + MCP ───────────────────────────────────
 async function callClaudeWithGmail(prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1008,7 +1008,6 @@ async function callClaudeWithGmail(prompt) {
     })
   });
   const data = await res.json();
-  // Extraire le résultat de l'outil MCP ou le texte
   const toolResult = data.content?.find(b => b.type === 'mcp_tool_result');
   const textResult = data.content?.find(b => b.type === 'text');
   return { toolResult: toolResult?.content?.[0]?.text || null, text: textResult?.text || '' };
