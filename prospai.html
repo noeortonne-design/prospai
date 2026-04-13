@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProspAI — Agent de prospection</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #161616;
+  --bg3: #1e1e1e;
+  --bg4: #252525;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0ede8;
+  --text2: #8a8580;
+  --text3: #5a5550;
+  --accent: #d4ff5e;
+  --accent2: #a8cc3a;
+  --accent-dim: rgba(212,255,94,0.08);
+  --accent-dim2: rgba(212,255,94,0.15);
+  --red: #ff5e5e;
+  --red-dim: rgba(255,94,94,0.1);
+  --orange: #ff9f40;
+  --orange-dim: rgba(255,159,64,0.1);
+  --blue: #5eaaff;
+  --blue-dim: rgba(94,170,255,0.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px; flex-shrink: 0; background: var(--bg2);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  padding: 24px 0; height: 100vh; position: sticky; top: 0;
+}
+.logo {
+  padding: 0 20px 24px; font-size: 18px; font-weight: 600; letter-spacing: -0.5px;
+  border-bottom: 1px solid var(--border); margin-bottom: 16px;
+}
+.logo span { color: var(--accent); }
+.logo small { display: block; font-size: 10px; font-weight: 400; color: var(--text3); letter-spacing: 0.05em; text-transform: uppercase; margin-top: 2px; }
+.nav { padding: 0 10px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--text2);
+  cursor: pointer; transition: all 0.15s; margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(212,255,94,0.2); }
+.nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; }
+.sidebar-footer { padding: 16px 20px 0; border-top: 1px solid var(--border); }
+.user-badge { display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-dim); border: 1px solid rgba(212,255,94,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--accent); }
+.user-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.user-plan { font-size: 10px; color: var(--text3); }
+
+/* MAIN */
+.main { flex: 1; overflow-y: auto; height: 100vh; }
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(15,15,15,0.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border); padding: 16px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-title { font-size: 15px; font-weight: 500; color: var(--text); }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.btn {
+  padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px;
+  font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s;
+  font-weight: 500; border: 1px solid transparent;
+}
+.btn-primary { background: var(--accent); color: #0f0f0f; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: transparent; color: var(--text2); border-color: var(--border2); }
+.btn-ghost:hover { background: var(--bg3); color: var(--text); }
+.content { padding: 32px; }
+
+/* PAGES */
+.page { display: none; }
+.page.active { display: block; }
+
+/* METRICS */
+.metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+.metric-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; transition: border-color 0.15s;
+}
+.metric-card:hover { border-color: var(--border2); }
+.metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.metric-value { font-size: 28px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+.metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.metric-sub.up { color: var(--accent); }
+
+/* SECTION */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 12px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* CAMPAIGN CARDS */
+.campaign-list { display: flex; flex-direction: column; gap: 12px; }
+.campaign-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; transition: all 0.15s; cursor: pointer;
+}
+.campaign-card:hover { border-color: var(--border2); background: var(--bg3); }
+.campaign-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.campaign-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.campaign-date { font-size: 11px; color: var(--text3); margin-top: 3px; }
+.badge { font-size: 10px; font-weight: 500; padding: 4px 10px; border-radius: 99px; letter-spacing: 0.03em; }
+.badge-active { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(212,255,94,0.2); }
+.badge-relance { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(255,159,64,0.2); }
+.badge-done { background: var(--bg4); color: var(--text3); border: 1px solid var(--border); }
+.progress-wrap { margin-bottom: 14px; }
+.progress-info { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.progress-bar { height: 3px; background: var(--bg4); border-radius: 99px; }
+.progress-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s; }
+.progress-fill.orange { background: var(--orange); }
+.progress-fill.done { background: var(--text3); }
+.campaign-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat { text-align: center; padding: 8px; background: var(--bg3); border-radius: var(--radius-xs); }
+.stat-val { font-size: 16px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
+.stat-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* FORM */
+.form-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+.form-section-title { font-size: 12px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.form-input, .form-select, .form-textarea {
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  padding: 9px 12px; transition: border-color 0.15s; outline: none; width: 100%;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--text3); }
+.form-select option { background: var(--bg3); }
+.form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+.toggle-row { display: flex; align-items: center; gap: 10px; }
+.toggle-label { font-size: 13px; color: var(--text2); }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 1.5px dashed var(--border2); border-radius: var(--radius);
+  padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-dim); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload-icon { font-size: 28px; margin-bottom: 10px; }
+.upload-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.upload-sub { font-size: 11px; color: var(--text3); }
+.upload-success { display: flex; align-items: center; gap: 10px; justify-content: center; }
+.upload-check { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; }
+
+/* CONTACTS TABLE */
+.contacts-wrap {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin-top: 16px;
+}
+.contacts-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.contacts-count { font-size: 12px; color: var(--text3); }
+.contacts-count strong { color: var(--accent); font-family: 'DM Mono', monospace; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { border-bottom: 1px solid var(--border); }
+th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+td { padding: 10px 16px; font-size: 13px; color: var(--text2); border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg3); color: var(--text); }
+.td-name { font-weight: 500; color: var(--text); }
+.td-mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.dot-ok { background: var(--accent); }
+.dot-warn { background: var(--orange); }
+.dot-err { background: var(--red); }
+.empty-state { text-align: center; padding: 48px; color: var(--text3); font-size: 13px; }
+
+/* TEMPLATE TOGGLE */
+.template-tabs { display: flex; gap: 0; border-radius: var(--radius-sm); background: var(--bg3); padding: 3px; margin-bottom: 14px; }
+.template-tab {
+  flex: 1; padding: 7px 12px; text-align: center; font-size: 12px; font-weight: 500;
+  color: var(--text3); border-radius: var(--radius-xs); cursor: pointer; transition: all 0.15s;
+}
+.template-tab.active { background: var(--bg2); color: var(--text); border: 1px solid var(--border2); }
+
+/* FORM ACTIONS */
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+/* NOTIFICATION BADGE */
+.notif { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--accent-dim); border: 1px solid rgba(212,255,94,0.2); border-radius: 99px; font-size: 11px; color: var(--accent); }
+.notif-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+/* MODE CARDS */
+.mode-card {
+  border: 1px solid var(--border2); border-radius: var(--radius); padding: 16px;
+  cursor: pointer; transition: all 0.15s; background: var(--bg3);
+}
+.mode-card:hover { border-color: rgba(212,255,94,0.3); }
+.mode-card.active { border-color: var(--accent); background: var(--accent-dim); }
+.mode-icon { font-size: 18px; margin-bottom: 8px; }
+.mode-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.mode-desc { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.mode-card.active .mode-title { color: var(--accent); }
+.mode-card.active .mode-desc { color: rgba(212,255,94,0.5); }
+
+/* TOGGLE */
+.toggle-track { position:relative; width:36px; height:20px; background:var(--bg4); border-radius:99px; border:1px solid var(--border2); transition:background 0.2s; display:inline-block; }
+.toggle-track.on { background:var(--accent); border-color:var(--accent); }
+.toggle-thumb { position:absolute; top:2px; left:2px; width:14px; height:14px; background:#fff; border-radius:50%; transition:transform 0.2s; pointer-events:none; }
+.toggle-track.on .toggle-thumb { transform:translateX(16px); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 100;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 14px 18px; font-size: 13px; color: var(--text);
+  transform: translateY(80px); opacity: 0; transition: all 0.3s;
+  display: flex; align-items: center; gap: 10px; max-width: 320px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast-icon { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">Prosp<span>AI</span><small>Agent de prospection</small></div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showPage('dashboard', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
+      Tableau de bord
+    </div>
+    <div class="nav-item" onclick="showPage('nouvelle', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Nouvelle campagne
+    </div>
+    <div class="nav-item" onclick="showPage('contacts', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Contacts
+    </div>
+    <div class="nav-item" onclick="showPage('rapports', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h10v12H3z" stroke="currentColor" stroke-width="1.2" rx="1"/><path d="M5 6h6M5 9h4M5 12h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Rapports
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-badge">
+      <div class="user-avatar">JD</div>
+      <div>
+        <div class="user-name">Jean Dupont</div>
+        <div class="user-plan">Plan Pro · Gmail connecté</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <span class="page-title" id="page-title">Tableau de bord</span>
+    <div class="topbar-actions">
+      <div class="notif"><div class="notif-dot"></div>Gmail connecté</div>
+      <button class="btn btn-primary" onclick="showPage('nouvelle', document.querySelector('[onclick*=nouvelle]'))">+ Nouvelle campagne</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <!-- Métriques live -->
+      <div class="metrics-grid" id="dash-metrics">
+        <div class="metric-card">
+          <div class="metric-label">Emails envoyés</div>
+          <div class="metric-value" id="dash-envoyes">—</div>
+          <div class="metric-sub" id="dash-envoyes-sub">aucune campagne</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Taux de réponse</div>
+          <div class="metric-value" id="dash-taux">—</div>
+          <div class="metric-sub" id="dash-taux-sub">toutes campagnes</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Relances auto</div>
+          <div class="metric-value" id="dash-relances">—</div>
+          <div class="metric-sub">envoyées automatiquement</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Campagnes actives</div>
+          <div class="metric-value" id="dash-actives">—</div>
+          <div class="metric-sub" id="dash-actives-sub">sur 0 au total</div>
+        </div>
+      </div>
+
+      <!-- Bandeau campagne live si active -->
+      <div id="dash-live-banner" style="display:none; margin-bottom:20px; padding:14px 18px; background:var(--accent-dim); border:1px solid rgba(212,255,94,0.25); border-radius:var(--radius); display:flex; align-items:center; gap:12px;">
+        <div class="notif-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;color:var(--accent)" id="live-banner-title">Campagne en cours</div>
+          <div style="font-size:11px;color:rgba(212,255,94,0.6);margin-top:2px" id="live-banner-sub">Surveillance active</div>
+        </div>
+        <div style="font-size:12px;color:var(--accent)" id="live-banner-stats"></div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Campagnes</span>
+        <span style="font-size:11px;color:var(--text3)" id="dash-last-update"></span>
+      </div>
+
+      <div class="campaign-list" id="dash-campaign-list">
+        <!-- Rempli dynamiquement -->
+        <div id="dash-empty" style="text-align:center;padding:48px;color:var(--text3);font-size:13px;border:1px dashed var(--border2);border-radius:var(--radius);">
+          Aucune campagne pour le moment.<br>
+          <span style="color:var(--accent);cursor:pointer;" onclick="showPage('nouvelle', document.querySelector('[onclick*=nouvelle]'))">Créer votre première campagne →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOUVELLE CAMPAGNE -->
+    <div class="page" id="page-nouvelle">
+
+      <div class="form-card">
+        <div class="form-section-title">Informations de la campagne</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nom de la campagne</label>
+            <input type="text" class="form-input" placeholder="ex : PME Île-de-France — Mai 2025" id="camp-nom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Secteur cible</label>
+            <select class="form-select" id="camp-secteur">
+              <option value="">Choisir un secteur...</option>
+              <option>PME généralistes</option>
+              <option>Agences web & digitales</option>
+              <option>RH & recruteurs</option>
+              <option>Industrie & manufacturing</option>
+              <option>Retail & commerce</option>
+              <option>Services B2B</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Délai avant relance (jours)</label>
+            <input type="number" class="form-input" value="7" min="1" max="30" id="camp-delai">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre max de relances par contact</label>
+            <input type="number" class="form-input" value="2" min="1" max="5" id="camp-relances">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-section-title">Base de contacts</div>
+        <div class="upload-zone" id="upload-zone" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+          <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" id="file-input">
+          <div id="upload-content">
+            <div class="upload-icon">📊</div>
+            <div class="upload-title">Glisser votre fichier Excel ici</div>
+            <div class="upload-sub">Formats acceptés : .xlsx, .xls, .csv · Colonnes : Prénom, Nom, Email, Entreprise</div>
+          </div>
+        </div>
+
+        <div id="contacts-preview" style="display:none">
+          <div class="contacts-wrap">
+            <div class="contacts-header">
+              <span class="section-title">Contacts importés</span>
+              <span class="contacts-count"><strong id="contacts-count">0</strong> contacts · <strong id="contacts-valid">0</strong> valides</span>
+            </div>
+            <div style="max-height: 300px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Prénom</th><th>Nom</th><th>Email</th><th>Entreprise</th><th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody id="contacts-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-section-title">Email de prospection</div>
+
+        <!-- Choix du mode -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+          <div class="mode-card active" id="mode-ia" onclick="switchMode('ia')">
+            <div class="mode-icon">✦</div>
+            <div class="mode-title">Claude rédige pour moi</div>
+            <div class="mode-desc">Vous donnez le contexte, l'IA rédige un email complet et le personnalise pour chaque contact.</div>
+          </div>
+          <div class="mode-card" id="mode-own" onclick="switchMode('own')">
+            <div class="mode-icon">✍</div>
+            <div class="mode-title">J'utilise mon propre email</div>
+            <div class="mode-desc">Vous collez votre email existant. L'IA l'adapte à chaque contact sans toucher à votre style ni votre message.</div>
+          </div>
+        </div>
+
+        <!-- MODE IA -->
+        <div id="panel-ia">
+          <div style="padding:12px 14px; background:var(--accent-dim); border:1px solid rgba(212,255,94,0.2); border-radius:var(--radius-sm); font-size:12px; color:var(--accent); margin-bottom:14px;">
+            ✦ Décrivez ce que vous vendez et à qui — Claude rédige un email professionnel et personnalise chaque envoi (prénom, entreprise, secteur).
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Ce que vous vendez / proposez</label>
+            <input type="text" class="form-input" placeholder="ex : Une solution de gestion RH pour les PME de 10 à 100 salariés" id="ia-produit">
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Ton souhaité</label>
+            <select class="form-select" id="ia-ton">
+              <option value="professionnel">Professionnel et direct</option>
+              <option value="chaleureux">Chaleureux et humain</option>
+              <option value="concis">Court et percutant</option>
+              <option value="consultant">Style consultant expert</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Informations complémentaires (optionnel)</label>
+            <textarea class="form-textarea" style="min-height:80px" placeholder="ex : Insister sur le gain de temps, mentionner qu'on travaille déjà avec des entreprises similaires..." id="ia-contexte"></textarea>
+          </div>
+        </div>
+
+        <!-- MODE PROPRE EMAIL -->
+        <div id="panel-own" style="display:none">
+          <div style="padding:12px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius-sm); font-size:12px; color:var(--text2); margin-bottom:14px;">
+            ✍ Collez votre email tel quel. Claude va uniquement <strong style="color:var(--text)">personnaliser le prénom, l'entreprise et le secteur</strong> pour chaque contact — votre message reste intact.
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Objet de l'email</label>
+            <input type="text" class="form-input" placeholder="ex : Une question rapide pour vous" id="own-objet">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Votre email de prospection</label>
+            <textarea class="form-textarea" style="min-height:160px" placeholder="Collez ici votre email de prospection habituel...&#10;&#10;Bonjour,&#10;&#10;Je me permets de vous contacter au sujet de..." id="own-body"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-section-title">Email de relance</div>
+        <div style="padding:12px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius-sm); font-size:12px; color:var(--text2); margin-bottom:16px;">
+          Envoyé automatiquement après <strong style="color:var(--text)" id="relance-delai-label">7 jours</strong> sans réponse. Même logique que l'email principal — choisissez comment vous voulez le rédiger.
+        </div>
+
+        <!-- Choix mode relance -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+          <div class="mode-card active" id="rmode-ia" onclick="switchRelanceMode('ia')">
+            <div class="mode-icon">✦</div>
+            <div class="mode-title">Claude rédige pour moi</div>
+            <div class="mode-desc">Claude rédige une relance cohérente avec votre email initial, personnalisée pour chaque contact.</div>
+          </div>
+          <div class="mode-card" id="rmode-own" onclick="switchRelanceMode('own')">
+            <div class="mode-icon">✍</div>
+            <div class="mode-title">J'écris ma propre relance</div>
+            <div class="mode-desc">Vous rédigez ou collez votre relance. Claude la personnalise pour chaque contact sans la modifier.</div>
+          </div>
+        </div>
+
+        <!-- MODE IA relance -->
+        <div id="rpanel-ia">
+          <div style="padding:12px 14px; background:var(--accent-dim); border:1px solid rgba(212,255,94,0.2); border-radius:var(--radius-sm); font-size:12px; color:var(--accent); margin-bottom:14px;">
+            ✦ Claude va rédiger une relance naturelle qui fait référence à votre premier email, adaptée à chaque contact. Vous pouvez préciser un angle particulier.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Angle ou instruction particulière (optionnel)</label>
+            <input type="text" class="form-input" placeholder="ex : Mentionner une nouveauté, proposer un appel de 15 min, rester très court..." id="ria-contexte">
+          </div>
+        </div>
+
+        <!-- MODE PROPRE relance -->
+        <div id="rpanel-own" style="display:none">
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Objet de la relance</label>
+            <input type="text" class="form-input" placeholder="ex : Suite à mon message de la semaine dernière" id="relance-objet">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Votre message de relance</label>
+            <textarea class="form-textarea" placeholder="Bonjour,&#10;&#10;Je reviens vers vous suite à mon message du {{date_envoi}}. Je souhaitais savoir si vous aviez eu l'occasion de le lire..." id="relance-body"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-section-title">Notifications de réponse</div>
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+          <div style="flex:1">
+            <div style="font-size:13px; color:var(--text); font-weight:500; margin-bottom:4px;">Être alerté dès qu'un contact répond</div>
+            <div style="font-size:12px; color:var(--text3); line-height:1.6;">Vous recevrez immédiatement un email sur votre boîte Gmail dès qu'un contact répond à votre prospection — pour ne jamais rater un lead chaud.</div>
+            <div style="margin-top:10px; padding:10px 14px; background:var(--bg3); border-radius:var(--radius-sm); border:1px solid var(--border); font-size:12px; color:var(--text2);">
+              Exemple : <em style="color:var(--text)">🔔 Sophie Martin (RH Conseil) a répondu à votre campagne "PME Île-de-France". Répondez pendant qu'elle est disponible.</em>
+            </div>
+          </div>
+          <div style="flex-shrink:0; padding-top:2px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <div class="toggle-track" id="notif-track">
+                <input type="checkbox" id="notif-toggle" checked onchange="toggleNotif(this.checked)" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0">
+                <span class="toggle-thumb" id="notif-thumb"></span>
+              </div>
+              <span style="font-size:12px; color:var(--accent)" id="notif-label">Activées</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="previewEmail()">Aperçu d'un email</button>
+        <button class="btn btn-primary" onclick="lancerCampagne()">Lancer la campagne →</button>
+      </div>
+    </div>
+
+    <!-- GÉNÉRATION -->
+    <div class="page" id="page-generation"></div>
+
+    <!-- CONTACTS -->
+    <div class="page" id="page-contacts">
+      <div class="contacts-wrap">
+        <div class="contacts-header">
+          <span class="section-title">Tous les contacts</span>
+          <span class="contacts-count">Importez une base depuis "Nouvelle campagne"</span>
+        </div>
+        <div class="empty-state" id="contacts-empty">
+          Aucun contact importé pour le moment.<br>Créez une campagne et uploadez votre fichier Excel.
+        </div>
+        <div id="contacts-full-table" style="display:none; max-height: 600px; overflow-y:auto;">
+          <table>
+            <thead><tr><th>Prénom</th><th>Nom</th><th>Email</th><th>Entreprise</th><th>Campagne</th><th>Statut</th></tr></thead>
+            <tbody id="contacts-full-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RAPPORTS -->
+    <div class="page" id="page-rapports">
+      <div class="form-card">
+        <div class="form-section-title">Rapport — RH & Recruteurs, Fév. 2025</div>
+        <div class="metrics-grid" style="margin-bottom:20px">
+          <div class="metric-card"><div class="metric-label">Contacts touchés</div><div class="metric-value">89</div></div>
+          <div class="metric-card"><div class="metric-label">Taux de réponse</div><div class="metric-value">21%</div></div>
+          <div class="metric-card"><div class="metric-label">Relances auto</div><div class="metric-value">34</div></div>
+          <div class="metric-card"><div class="metric-label">Durée campagne</div><div class="metric-value">18j</div></div>
+        </div>
+        <div style="padding: 16px; background: var(--bg3); border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 16px;">
+          <div style="font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 500;">Résumé généré par Claude</div>
+          La campagne a atteint 89 contacts dans le secteur RH sur 18 jours. Le taux de réponse de 21% est supérieur à la moyenne du secteur (15%). Les relances automatiques ont généré 6 réponses supplémentaires soit +32% de leads additionnels. Les objets contenant le mot "recrutement" ont obtenu un meilleur taux d'ouverture. <strong style="color:var(--text)">Recommandation :</strong> tester un objet plus direct pour la prochaine campagne et réduire le délai de relance à 5 jours.
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost">Exporter en PDF</button>
+          <button class="btn btn-primary">Envoyer par email</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Message</span>
+</div>
+
+<script>
+let importedContacts = [];
+let currentMode = 'ia';
+
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const titles = { dashboard: 'Tableau de bord', nouvelle: 'Nouvelle campagne', contacts: 'Contacts', rapports: 'Rapports' };
+  document.getElementById('page-title').textContent = titles[name] || name;
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-ia').classList.toggle('active', mode === 'ia');
+  document.getElementById('mode-own').classList.toggle('active', mode === 'own');
+  document.getElementById('panel-ia').style.display = mode === 'ia' ? 'block' : 'none';
+  document.getElementById('panel-own').style.display = mode === 'own' ? 'block' : 'none';
+}
+
+function switchRelanceMode(mode) {
+  document.getElementById('rmode-ia').classList.toggle('active', mode === 'ia');
+  document.getElementById('rmode-own').classList.toggle('active', mode === 'own');
+  document.getElementById('rpanel-ia').style.display = mode === 'ia' ? 'block' : 'none';
+  document.getElementById('rpanel-own').style.display = mode === 'own' ? 'block' : 'none';
+}
+
+function toggleNotif(checked) {
+  const track = document.getElementById('notif-track');
+  const label = document.getElementById('notif-label');
+  track.classList.toggle('on', checked);
+  label.textContent = checked ? 'Activées' : 'Désactivées';
+  label.style.color = checked ? 'var(--accent)' : 'var(--text3)';
+}
+
+
+
+function dragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function dragLeave(e) { document.getElementById('upload-zone').classList.remove('drag'); }
+function dropFile(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      importedContacts = parseContacts(json);
+      renderContactsPreview(importedContacts);
+      renderContactsFull(importedContacts, file.name);
+      showToast('✓', `${importedContacts.length} contacts importés depuis ${file.name}`);
+    } catch (err) {
+      showToast('⚠', 'Erreur de lecture du fichier. Vérifiez le format.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseContacts(json) {
+  const aliases = {
+    prenom: ['prenom', 'prénom', 'firstname', 'first_name', 'first name'],
+    nom: ['nom', 'lastname', 'last_name', 'last name', 'surname'],
+    email: ['email', 'mail', 'e-mail', 'courriel', 'adresse mail', 'adresse email'],
+    entreprise: ['entreprise', 'company', 'société', 'societe', 'organization', 'organisation']
+  };
+  function findKey(obj, field) {
+    const keys = Object.keys(obj).map(k => k.toLowerCase().trim());
+    for (const alias of aliases[field]) {
+      const idx = keys.findIndex(k => k.includes(alias));
+      if (idx !== -1) return Object.keys(obj)[idx];
+    }
+    return null;
+  }
+  return json.map((row, i) => {
+    const prenomKey = findKey(row, 'prenom');
+    const nomKey = findKey(row, 'nom');
+    const emailKey = findKey(row, 'email');
+    const entrepriseKey = findKey(row, 'entreprise');
+    const email = emailKey ? String(row[emailKey]).trim() : '';
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return {
+      id: i,
+      prenom: prenomKey ? String(row[prenomKey]).trim() : '',
+      nom: nomKey ? String(row[nomKey]).trim() : '',
+      email: email,
+      entreprise: entrepriseKey ? String(row[entrepriseKey]).trim() : '',
+      valid: isValid
+    };
+  });
+}
+
+function renderContactsPreview(contacts) {
+  const valid = contacts.filter(c => c.valid).length;
+  document.getElementById('contacts-count').textContent = contacts.length;
+  document.getElementById('contacts-valid').textContent = valid;
+  const tbody = document.getElementById('contacts-tbody');
+  tbody.innerHTML = contacts.slice(0, 10).map(c => `
+    <tr>
+      <td class="td-name">${c.prenom || '—'}</td>
+      <td>${c.nom || '—'}</td>
+      <td class="td-mono">${c.email || '—'}</td>
+      <td>${c.entreprise || '—'}</td>
+      <td><span class="status-dot ${c.valid ? 'dot-ok' : 'dot-err'}"></span>${c.valid ? 'Valide' : 'Email invalide'}</td>
+    </tr>
+  `).join('');
+  if (contacts.length > 10) {
+    tbody.innerHTML += `<tr><td colspan="5" style="text-align:center;color:var(--text3);font-size:12px;padding:12px">... et ${contacts.length - 10} autres contacts</td></tr>`;
+  }
+  document.getElementById('contacts-preview').style.display = 'block';
+  const uc = document.getElementById('upload-content');
+  uc.innerHTML = `<div class="upload-success"><div class="upload-check">✓</div><div><div class="upload-title" style="text-align:left">${contacts.length} contacts importés</div><div class="upload-sub">${valid} valides · Cliquer pour changer de fichier</div></div></div>`;
+}
+
+function renderContactsFull(contacts, filename) {
+  document.getElementById('contacts-empty').style.display = 'none';
+  const table = document.getElementById('contacts-full-table');
+  table.style.display = 'block';
+  const tbody = document.getElementById('contacts-full-tbody');
+  tbody.innerHTML = contacts.map(c => `
+    <tr>
+      <td class="td-name">${c.prenom || '—'}</td>
+      <td>${c.nom || '—'}</td>
+      <td class="td-mono">${c.email || '—'}</td>
+      <td>${c.entreprise || '—'}</td>
+      <td style="color:var(--text3);font-size:12px">${filename}</td>
+      <td><span class="status-dot ${c.valid ? 'dot-ok' : 'dot-err'}"></span>${c.valid ? 'Prêt' : 'Invalide'}</td>
+    </tr>
+  `).join('');
+}
+
+// ─── API ANTHROPIC ───────────────────────────────────────────────────
+async function callClaude(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+function buildPromptProspection(contact, config) {
+  if (config.mode === 'ia') {
+    return `Tu es un expert en prospection commerciale B2B en France.
+Rédige un email de prospection professionnel et personnalisé pour ce contact :
+- Prénom : ${contact.prenom}
+- Nom : ${contact.nom}
+- Entreprise : ${contact.entreprise}
+- Secteur : ${config.secteur || 'non précisé'}
+
+Ce que le commercial vend : ${config.produit}
+Ton souhaité : ${config.ton}
+Contexte supplémentaire : ${config.contexte || 'aucun'}
+
+Règles importantes :
+- Email court (5-8 lignes max), naturel, pas robotique
+- Commencer par "Bonjour ${contact.prenom},"
+- Personnaliser avec le nom de l'entreprise "${contact.entreprise}"
+- Pas de formule générique type "J'espère que vous allez bien"
+- Terminer par une question ouverte simple pour inviter à répondre
+- Pas de signature (elle sera ajoutée automatiquement)
+
+Réponds UNIQUEMENT avec le corps de l'email, rien d'autre.`;
+  } else {
+    return `Tu es un expert en personnalisation d'emails B2B.
+Voici un email de prospection à personnaliser pour ce contact :
+- Prénom : ${contact.prenom}
+- Entreprise : ${contact.entreprise}
+- Secteur : ${config.secteur || 'non précisé'}
+
+Email original :
+${config.emailExistant}
+
+Ta tâche : personnalise cet email pour ce contact spécifique.
+- Remplace les éventuels placeholders génériques par le prénom et l'entreprise
+- Adapte subtilement une phrase ou deux pour montrer que c'est personnel
+- NE CHANGE PAS le fond, le style, ni la structure de l'email
+- NE CHANGE PAS la longueur
+- Réponds UNIQUEMENT avec l'email personnalisé, rien d'autre.`;
+  }
+}
+
+function buildPromptRelance(contact, emailInitial, config) {
+  if (config.relanceMode === 'ia') {
+    return `Tu es un expert en prospection B2B.
+Rédige un email de relance pour ce contact qui n'a pas répondu à l'email initial.
+
+Contact : ${contact.prenom} ${contact.nom} — ${contact.entreprise}
+Email initial envoyé :
+${emailInitial}
+
+Contexte pour la relance : ${config.relanceContexte || 'aucun'}
+
+Règles :
+- Très court (3-4 lignes max)
+- Naturel, pas agressif, pas culpabilisant
+- Faire référence au premier email sans le répéter
+- Une seule question simple pour relancer la conversation
+- Commencer par "Bonjour ${contact.prenom},"
+- Pas de signature
+
+Réponds UNIQUEMENT avec le corps de la relance.`;
+  } else {
+    return `Personnalise cet email de relance pour ${contact.prenom} de ${contact.entreprise} :
+${config.relanceBody}
+Remplace les placeholders, adapte subtilement. Réponds UNIQUEMENT avec l'email.`;
+  }
+}
+
+// ─── APERÇU EMAIL EN LIVE ────────────────────────────────────────────
+async function previewEmail() {
+  if (importedContacts.length === 0) { showToast('⚠', 'Importez d\'abord votre fichier Excel'); return; }
+
+  const config = getCampagneConfig();
+  if (config.mode === 'ia' && !config.produit) { showToast('⚠', 'Décrivez ce que vous vendez'); return; }
+  if (config.mode === 'own' && !config.emailExistant) { showToast('⚠', 'Collez votre email existant'); return; }
+
+  const contact = importedContacts.find(c => c.valid) || importedContacts[0];
+
+  // Afficher le modal d'aperçu
+  showPreviewModal(contact, null, null, true);
+
+  const prompt = buildPromptProspection(contact, config);
+  try {
+    const emailGenere = await callClaude(prompt);
+    showPreviewModal(contact, emailGenere, null, false);
+  } catch(e) {
+    showPreviewModal(contact, null, 'Erreur lors de la génération. Vérifiez votre connexion.', false);
+  }
+}
+
+function getCampagneConfig() {
+  return {
+    nom: document.getElementById('camp-nom').value.trim(),
+    secteur: document.getElementById('camp-secteur').value,
+    delai: document.getElementById('camp-delai').value,
+    relancesMax: document.getElementById('camp-relances').value,
+    mode: currentMode,
+    produit: document.getElementById('ia-produit')?.value || '',
+    ton: document.getElementById('ia-ton')?.value || 'professionnel',
+    contexte: document.getElementById('ia-contexte')?.value || '',
+    emailExistant: document.getElementById('own-body')?.value || '',
+    relanceMode: document.getElementById('rmode-ia')?.classList.contains('active') ? 'ia' : 'own',
+    relanceContexte: document.getElementById('ria-contexte')?.value || '',
+    relanceBody: document.getElementById('relance-body')?.value || '',
+    notifs: document.getElementById('notif-toggle')?.checked
+  };
+}
+
+function showPreviewModal(contact, emailText, error, loading) {
+  let modal = document.getElementById('preview-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'preview-modal';
+    modal.style.cssText = `position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:24px;`;
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-width:560px;overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--text)">Aperçu — ${contact.prenom} ${contact.nom}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${contact.entreprise} · ${contact.email}</div>
+        </div>
+        <button onclick="document.getElementById('preview-modal').remove()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;">✕</button>
+      </div>
+      <div style="padding:20px;">
+        ${loading ? `
+          <div style="display:flex;align-items:center;gap:12px;color:var(--accent);font-size:13px;">
+            <div style="width:16px;height:16px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
+            Claude rédige l'email pour ${contact.prenom}...
+          </div>
+        ` : error ? `
+          <div style="color:var(--red);font-size:13px;">${error}</div>
+        ` : `
+          <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;font-weight:500;">Email généré par Claude ✦</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-wrap;background:var(--bg3);padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);">${emailText}</div>
+          <div style="margin-top:14px;font-size:11px;color:var(--text3);">Chaque contact recevra une version personnalisée différente.</div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+let currentCampagneConfig = null;
+
+async function lancerCampagne() {
+  const config = getCampagneConfig();
+  if (!config.nom) { showToast('⚠', 'Donnez un nom à votre campagne'); return; }
+  if (importedContacts.length === 0) { showToast('⚠', 'Importez d\'abord votre fichier Excel'); return; }
+  if (config.mode === 'ia' && !config.produit) { showToast('⚠', 'Décrivez ce que vous vendez'); return; }
+  if (config.mode === 'own' && !config.emailExistant) { showToast('⚠', 'Collez votre email existant'); return; }
+
+  currentCampagneConfig = config;
+  const valid = importedContacts.filter(c => c.valid);
+  showGenerationScreen(config, valid);
+}
+
+function showGenerationScreen(config, contacts) {
+  showPage('generation', null);
+  document.getElementById('page-title').textContent = 'Génération en cours';
+
+  const page = document.getElementById('page-generation');
+  page.innerHTML = `
+    <div style="max-width:600px;margin:0 auto;">
+      <div class="form-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+          <div style="width:40px;height:40px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
+          <div>
+            <div style="font-size:15px;font-weight:500;color:var(--text)">Claude rédige vos emails...</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:3px" id="gen-status">Préparation de la campagne "${config.nom}"</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">
+          <div id="gen-progress-bar" style="height:3px;background:var(--accent);width:0%;transition:width 0.4s;"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3)" id="gen-count">0 / ${contacts.length} emails générés</div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-section-title" style="margin-bottom:12px;">Aperçu des emails générés</div>
+        <div id="gen-emails" style="display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  `;
+
+  generateEmails(config, contacts);
+}
+
+async function generateEmails(config, contacts) {
+  const emailsContainer = document.getElementById('gen-emails');
+  const generatedEmails = [];
+
+  for (let i = 0; i < contacts.length; i++) {
+    const c = contacts[i];
+    const pct = Math.round(((i + 1) / contacts.length) * 100);
+
+    document.getElementById('gen-status').textContent = `Rédaction pour ${c.prenom} ${c.nom} (${c.entreprise})...`;
+    document.getElementById('gen-count').textContent = `${i + 1} / ${contacts.length} emails générés`;
+    document.getElementById('gen-progress-bar').style.width = pct + '%';
+
+    // Carte placeholder en chargement
+    const card = document.createElement('div');
+    card.style.cssText = `background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;`;
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:500;color:var(--text)">${c.prenom} ${c.nom} — ${c.entreprise}</div>
+        <div style="width:12px;height:12px;border:1.5px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);">Génération en cours...</div>
+    `;
+    emailsContainer.appendChild(card);
+    emailsContainer.scrollTop = emailsContainer.scrollHeight;
+
+    try {
+      const prompt = buildPromptProspection(c, config);
+      const emailText = await callClaude(prompt);
+      generatedEmails.push({ contact: c, email: emailText });
+
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:12px;font-weight:500;color:var(--text)">${c.prenom} ${c.nom} — ${c.entreprise}</div>
+          <span style="font-size:10px;color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:99px;">✓ Prêt</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;white-space:pre-wrap;">${emailText.slice(0, 120)}${emailText.length > 120 ? '...' : ''}</div>
+      `;
+    } catch(e) {
+      card.innerHTML = `
+        <div style="font-size:12px;font-weight:500;color:var(--red);">${c.prenom} ${c.nom} — Erreur de génération</div>
+      `;
+    }
+
+    // Petit délai pour ne pas saturer l'API
+    if (i < contacts.length - 1) await new Promise(r => setTimeout(r, 300));
+  }
+
+  // Campagne générée — afficher bouton d'envoi
+  document.getElementById('gen-status').textContent = `✓ ${generatedEmails.length} emails prêts à envoyer !`;
+  document.getElementById('gen-progress-bar').style.width = '100%';
+
+  const btnContainer = document.createElement('div');
+  btnContainer.style.cssText = 'margin-top:20px;display:flex;gap:10px;justify-content:flex-end;';
+  btnContainer.innerHTML = `
+    <button class="btn btn-ghost" onclick="showPage('nouvelle', document.querySelector('[onclick*=nouvelle]'))">Modifier</button>
+    <button class="btn btn-primary" id="btn-envoyer">Envoyer les ${generatedEmails.length} emails via Gmail →</button>
+  `;
+  document.querySelector('#page-generation > div').appendChild(btnContainer);
+
+  document.getElementById('btn-envoyer').onclick = () => confirmerEnvoi(generatedEmails.length, generatedEmails, currentCampagneConfig);
+}
+
+// ─── ÉTAT GLOBAL CAMPAGNE ────────────────────────────────────────────
+let activeCampaign = null;
+
+// ─── GMAIL VIA API ANTHROPIC + MCP ───────────────────────────────────
+async function callClaudeWithGmail(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      mcp_servers: [{
+        type: 'url',
+        url: 'https://gmailmcp.googleapis.com/mcp/v1',
+        name: 'gmail-mcp'
+      }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await res.json();
+  // Extraire le résultat de l'outil MCP ou le texte
+  const toolResult = data.content?.find(b => b.type === 'mcp_tool_result');
+  const textResult = data.content?.find(b => b.type === 'text');
+  return { toolResult: toolResult?.content?.[0]?.text || null, text: textResult?.text || '' };
+}
+
+// ─── ENVOI D'UN EMAIL VIA GMAIL MCP ─────────────────────────────────
+async function envoyerEmailGmail({ to, subject, body, threadId = null }) {
+  const prompt = threadId
+    ? `Réponds à ce thread Gmail (thread_id: ${threadId}) avec ce message exactement :
+Destinataire : ${to}
+Objet : ${subject}
+Corps :
+${body}
+Envoie cet email maintenant via gmail_send_email. Ne change pas le contenu.`
+    : `Envoie cet email via gmail_send_email :
+Destinataire : ${to}
+Objet : ${subject}
+Corps :
+${body}
+Envoie-le maintenant. Ne change pas le contenu.`;
+
+  const result = await callClaudeWithGmail(prompt);
+  return result;
+}
+
+// ─── VÉRIFIER LES RÉPONSES DANS GMAIL ────────────────────────────────
+async function verifierReponsesGmail(contacts, campaignName) {
+  const prompt = `Cherche dans Gmail les réponses reçues pour la campagne de prospection "${campaignName}".
+Utilise gmail_search_messages avec la requête : "is:inbox subject:${campaignName}"
+Pour chaque email trouvé, retourne uniquement un JSON avec cette structure :
+{"reponses": [{"email_expediteur": "...", "sujet": "...", "date": "..."}]}
+Réponds UNIQUEMENT avec le JSON, rien d'autre.`;
+
+  try {
+    const result = await callClaudeWithGmail(prompt);
+    const raw = result.text || result.toolResult || '{"reponses":[]}';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    return { reponses: [] };
+  }
+}
+
+// ─── ENVOI NOTIFICATION AU CLIENT ────────────────────────────────────
+async function envoyerNotificationReponse({ clientEmail, contactNom, contactEntreprise, campaignName }) {
+  await envoyerEmailGmail({
+    to: clientEmail,
+    subject: `🔔 ${contactNom} (${contactEntreprise}) a répondu à votre campagne`,
+    body: `Bonjour,
+
+Bonne nouvelle ! ${contactNom} de ${contactEntreprise} vient de répondre à votre campagne "${campaignName}".
+
+Connectez-vous à ProspAI pour voir la réponse et y répondre rapidement, pendant que le contact est disponible.
+
+→ https://prospai.fr/campagnes
+
+Bonne prospection !
+L'équipe ProspAI`
+  });
+}
+
+// ─── ENVOI RÉEL DE TOUS LES EMAILS ───────────────────────────────────
+async function confirmerEnvoi(count, generatedEmails, config) {
+  showEnvoiScreen(config, generatedEmails);
+}
+
+function showEnvoiScreen(config, emails) {
+  showPage('generation', null);
+  document.getElementById('page-title').textContent = 'Envoi en cours';
+
+  const page = document.getElementById('page-generation');
+  page.innerHTML = `
+    <div style="max-width:600px;margin:0 auto;">
+      <div class="form-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+          <div style="width:40px;height:40px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;" id="send-spinner"></div>
+          <div>
+            <div style="font-size:15px;font-weight:500;color:var(--text)" id="send-title">Envoi des emails via Gmail...</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:3px" id="send-status">Connexion à Gmail...</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">
+          <div id="send-progress-bar" style="height:3px;background:var(--accent);width:0%;transition:width 0.5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);">
+          <span id="send-count">0 / ${emails.length} emails envoyés</span>
+          <span id="send-delay">Délai anti-spam : 3s entre chaque envoi</span>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-section-title" style="margin-bottom:12px;">Journal d'envoi</div>
+        <div id="send-log" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:12px;"></div>
+      </div>
+    </div>
+  `;
+
+  sendEmails(config, emails);
+}
+
+async function sendEmails(config, emails) {
+  const log = document.getElementById('send-log');
+  let sent = 0, errors = 0;
+
+  // Sauvegarder la campagne en état actif
+  activeCampaign = {
+    nom: config.nom,
+    contacts: emails.map(e => ({ ...e.contact, emailEnvoye: e.email, datEnvoi: new Date().toISOString(), repondu: false, relancé: false })),
+    config,
+    dateDebut: new Date().toISOString()
+  };
+
+  const addLog = (msg, type = 'info') => {
+    const colors = { info: 'var(--text3)', ok: 'var(--accent)', err: 'var(--red)', warn: 'var(--orange)' };
+    const el = document.createElement('div');
+    el.style.cssText = `color:${colors[type]};padding:4px 0;border-bottom:1px solid var(--border);`;
+    el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  addLog(`Campagne "${config.nom}" — ${emails.length} emails à envoyer`);
+  addLog(`Sujet : ${config.mode === 'own' ? document.getElementById('own-objet')?.value || 'Prospection' : 'Généré par Claude'}`);
+
+  for (let i = 0; i < emails.length; i++) {
+    const { contact, email: emailBody } = emails[i];
+    const pct = Math.round(((i + 1) / emails.length) * 100);
+    const subject = config.mode === 'own'
+      ? (document.getElementById('own-objet')?.value || 'Une question rapide')
+      : `Message pour ${contact.prenom} ${contact.nom}`;
+
+    document.getElementById('send-status').textContent = `Envoi à ${contact.prenom} ${contact.nom} (${contact.email})...`;
+    document.getElementById('send-count').textContent = `${i + 1} / ${emails.length} emails envoyés`;
+    document.getElementById('send-progress-bar').style.width = pct + '%';
+
+    addLog(`→ Envoi à ${contact.prenom} ${contact.nom} <${contact.email}>...`);
+
+    try {
+      await envoyerEmailGmail({ to: contact.email, subject, body: emailBody });
+      sent++;
+      addLog(`✓ Envoyé à ${contact.prenom} ${contact.nom}`, 'ok');
+    } catch(e) {
+      errors++;
+      addLog(`✗ Erreur pour ${contact.email} : ${e.message}`, 'err');
+    }
+
+    // Délai anti-spam entre chaque email
+    if (i < emails.length - 1) {
+      addLog(`⏱ Pause 3s (anti-spam)...`);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+
+  // Tous envoyés
+  document.getElementById('send-spinner').style.animation = 'none';
+  document.getElementById('send-spinner').style.borderColor = 'var(--accent)';
+  document.getElementById('send-spinner').innerHTML = `<span style="font-size:16px;color:var(--accent)">✓</span>`;
+  document.getElementById('send-title').textContent = `${sent} emails envoyés !`;
+  document.getElementById('send-status').textContent = errors > 0 ? `${errors} erreurs — vérifiez le journal` : `Campagne active · Relances dans ${config.delai} jours`;
+
+  addLog(`─── Terminé : ${sent} envoyés, ${errors} erreurs ───`, 'ok');
+  addLog(`Surveillance des réponses activée. Relances prévues dans ${config.delai} jours.`, 'ok');
+
+  // Démarrer la surveillance
+  demarrerSurveillance(config);
+
+  // Enregistrer la campagne dans le dashboard
+  rafraichirDashboard();
+
+  // Bouton retour dashboard
+  const btn = document.createElement('div');
+  btn.style.cssText = 'margin-top:20px;display:flex;gap:10px;justify-content:flex-end;';
+  btn.innerHTML = `<button class="btn btn-primary" onclick="showPage('dashboard', document.querySelector('[onclick*=dashboard]'))">Voir le tableau de bord →</button>`;
+  document.querySelector('#page-generation > div').appendChild(btn);
+}
+
+// ─── MOTEUR DE SURVEILLANCE + RELANCES AUTOMATIQUES ─────────────────
+function demarrerSurveillance(config) {
+  if (!activeCampaign) return;
+
+  // Récupérer l'email du client une seule fois au démarrage
+  callClaudeWithGmail('Utilise gmail_get_profile. Réponds UNIQUEMENT avec l\'adresse email, rien d\'autre.')
+    .then(r => { if (activeCampaign) activeCampaign.clientEmail = r.text?.trim(); })
+    .catch(() => {});
+
+  // Boucle principale toutes les 10 minutes
+  const intervalId = setInterval(async () => {
+    if (!activeCampaign) { clearInterval(intervalId); return; }
+    await tickSurveillance(config, intervalId);
+  }, 10 * 60 * 1000);
+
+  // Premier tick après 30s
+  setTimeout(() => tickSurveillance(config, intervalId), 30000);
+
+  // Planifier les relances selon le délai configuré
+  planifierRelances(config, intervalId);
+}
+
+// ─── TICK PRINCIPAL : vérifie réponses + déclenche relances dues ──────
+async function tickSurveillance(config, intervalId) {
+  if (!activeCampaign) return;
+  try {
+    await detecterReponses(config);
+    await envoyerRelancesDues(config);
+    await verifierFinDeCampagne(config, intervalId);
+  } catch(e) {
+    console.error('Erreur tick surveillance:', e);
+  }
+}
+
+// ─── 1. DÉTECTER LES RÉPONSES ─────────────────────────────────────────
+async function detecterReponses(config) {
+  const { reponses } = await verifierReponsesGmail(activeCampaign.contacts, config.nom);
+
+  for (const rep of reponses) {
+    const contact = activeCampaign.contacts.find(c =>
+      c.email.toLowerCase() === rep.email_expediteur?.toLowerCase()
+    );
+    if (!contact || contact.repondu) continue;
+
+    // Marquer comme répondu → annule toute relance prévue
+    contact.repondu = true;
+    contact.dateReponse = new Date().toISOString();
+    showToast('🔔', `${contact.prenom} ${contact.nom} a répondu !`);
+
+    // Notifier le client
+    if (config.notifs && activeCampaign.clientEmail) {
+      await envoyerNotificationReponse({
+        clientEmail: activeCampaign.clientEmail,
+        contactNom: `${contact.prenom} ${contact.nom}`,
+        contactEntreprise: contact.entreprise,
+        campaignName: config.nom
+      });
+    }
+  }
+}
+
+// ─── 2. PLANIFIER LES RELANCES ────────────────────────────────────────
+function planifierRelances(config, intervalId) {
+  const delaiMs = parseInt(config.delai) * 24 * 60 * 60 * 1000; // jours → ms
+
+  activeCampaign.contacts.forEach(contact => {
+    if (!contact.valid) return;
+
+    // Planifier chaque relance (max config.relancesMax)
+    for (let r = 1; r <= parseInt(config.relancesMax); r++) {
+      const delaiRelance = delaiMs * r;
+      setTimeout(async () => {
+        if (!activeCampaign) return;
+        if (contact.repondu) return; // A répondu → pas de relance
+        if ((contact.relancesEnvoyees || 0) >= parseInt(config.relancesMax)) return;
+
+        await envoyerRelance(contact, config, r);
+      }, delaiRelance);
+    }
+  });
+}
+
+// ─── 3. ENVOYER UNE RELANCE ───────────────────────────────────────────
+async function envoyerRelance(contact, config, numRelance) {
+  if (contact.repondu) return; // Double vérification au moment de l'envoi
+
+  try {
+    // Générer le corps de la relance
+    const relanceBody = await genererRelance(contact, config);
+    const subject = config.mode === 'own'
+      ? (document.getElementById('relance-objet')?.value || `Suite à mon message — ${contact.entreprise}`)
+      : `Relance — ${contact.prenom} ${contact.nom}`;
+
+    await envoyerEmailGmail({ to: contact.email, subject, body: relanceBody });
+
+    contact.relancesEnvoyees = (contact.relancesEnvoyees || 0) + 1;
+    contact.dernièreRelance = new Date().toISOString();
+
+    showToast('↩', `Relance ${numRelance} envoyée à ${contact.prenom} ${contact.nom}`);
+
+    // Mettre à jour le dashboard
+    rafraichirDashboard();
+
+  } catch(e) {
+    console.error(`Erreur relance pour ${contact.email}:`, e);
+  }
+}
+
+// ─── 4. GÉNÉRER LE TEXTE DE LA RELANCE ───────────────────────────────
+async function genererRelance(contact, config) {
+  const prompt = buildPromptRelance(contact, contact.emailEnvoye || '', config);
+  return await callClaude(prompt);
+}
+
+// ─── 5. RELANCES DUES (pour les contacts dont le délai est écoulé) ───
+async function envoyerRelancesDues(config) {
+  if (!activeCampaign) return;
+  const maintenant = Date.now();
+  const delaiMs = parseInt(config.delai) * 24 * 60 * 60 * 1000;
+
+  for (const contact of activeCampaign.contacts) {
+    if (!contact.valid || contact.repondu) continue;
+    if ((contact.relancesEnvoyees || 0) >= parseInt(config.relancesMax)) continue;
+
+    const dateEnvoi = new Date(contact.datEnvoi).getTime();
+    const derniereRelance = contact.dernièreRelance ? new Date(contact.dernièreRelance).getTime() : dateEnvoi;
+    const echeance = derniereRelance + delaiMs;
+
+    if (maintenant >= echeance) {
+      await envoyerRelance(contact, config, (contact.relancesEnvoyees || 0) + 1);
+      await new Promise(r => setTimeout(r, 2000)); // délai entre relances
+    }
+  }
+}
+
+// ─── 6. FIN DE CAMPAGNE ───────────────────────────────────────────────
+async function verifierFinDeCampagne(config, intervalId) {
+  if (!activeCampaign) return;
+
+  const contacts = activeCampaign.contacts.filter(c => c.valid);
+  const tousTraites = contacts.every(c =>
+    c.repondu || (c.relancesEnvoyees || 0) >= parseInt(config.relancesMax)
+  );
+
+  if (!tousTraites) return;
+
+  // Campagne terminée → générer le compte-rendu
+  clearInterval(intervalId);
+  showToast('✦', 'Campagne terminée ! Génération du compte-rendu...');
+  await genererCompteRendu(config, contacts);
+  activeCampaign = null;
+}
+
+// ─── 7. COMPTE-RENDU FINAL ────────────────────────────────────────────
+async function genererCompteRendu(config, contacts) {
+  const stats = {
+    total: contacts.length,
+    reponses: contacts.filter(c => c.repondu).length,
+    relances: contacts.reduce((s, c) => s + (c.relancesEnvoyees || 0), 0),
+    sansReponse: contacts.filter(c => !c.repondu).length,
+    duree: Math.round((Date.now() - new Date(activeCampaign?.dateDebut || Date.now()).getTime()) / (1000 * 60 * 60 * 24))
+  };
+  const tauxReponse = Math.round((stats.reponses / stats.total) * 100);
+
+  const prompt = `Tu es un expert en analyse de campagnes de prospection B2B.
+Voici les statistiques d'une campagne de prospection terminée :
+- Nom : "${config.nom}"
+- Secteur cible : ${config.secteur || 'non précisé'}
+- Total contacts : ${stats.total}
+- Réponses reçues : ${stats.reponses} (${tauxReponse}%)
+- Relances envoyées : ${stats.relances}
+- Sans réponse : ${stats.sansReponse}
+- Durée de la campagne : ${stats.duree} jours
+
+Rédige un compte-rendu professionnel et concis (5-7 lignes) qui :
+1. Résume les performances clés
+2. Compare le taux de réponse à la moyenne B2B française (12-15%)
+3. Donne 2-3 recommandations concrètes pour améliorer la prochaine campagne
+Réponds directement avec le texte du compte-rendu, sans titre.`;
+
+  const resume = await callClaude(prompt);
+
+  // Envoyer le compte-rendu par email au client
+  if (activeCampaign?.clientEmail) {
+    await envoyerEmailGmail({
+      to: activeCampaign.clientEmail,
+      subject: `📊 Compte-rendu campagne "${config.nom}" — ${tauxReponse}% de réponses`,
+      body: `Bonjour,
+
+Votre campagne "${config.nom}" est terminée. Voici le compte-rendu :
+
+─────────────────────────────
+STATISTIQUES
+• Contacts touchés : ${stats.total}
+• Réponses reçues : ${stats.reponses} (${tauxReponse}%)
+• Relances envoyées : ${stats.relances}
+• Sans réponse : ${stats.sansReponse}
+• Durée : ${stats.duree} jours
+─────────────────────────────
+
+ANALYSE & RECOMMANDATIONS
+
+${resume}
+
+─────────────────────────────
+Connectez-vous à ProspAI pour voir le détail contact par contact.
+→ https://prospai.fr/rapports
+
+Bonne prospection !
+L'équipe ProspAI`
+    });
+  }
+
+  // Mettre à jour l'UI rapport
+  mettreAJourRapport(config, stats, tauxReponse, resume);
+  showToast('✦', 'Compte-rendu envoyé par email !');
+}
+
+// ─── 8. METTRE À JOUR L'UI ────────────────────────────────────────────
+function mettreAJourRapport(config, stats, tauxReponse, resume) {
+  const page = document.getElementById('page-rapports');
+  if (!page) return;
+  page.innerHTML = `
+    <div class="form-card">
+      <div class="form-section-title">Rapport — ${config.nom}</div>
+      <div class="metrics-grid" style="margin-bottom:20px">
+        <div class="metric-card"><div class="metric-label">Contacts touchés</div><div class="metric-value">${stats.total}</div></div>
+        <div class="metric-card"><div class="metric-label">Taux de réponse</div><div class="metric-value">${tauxReponse}%</div><div class="metric-sub ${tauxReponse > 15 ? 'up' : ''}">Moy. secteur : 12-15%</div></div>
+        <div class="metric-card"><div class="metric-label">Relances auto</div><div class="metric-value">${stats.relances}</div></div>
+        <div class="metric-card"><div class="metric-label">Durée campagne</div><div class="metric-value">${stats.duree}j</div></div>
+      </div>
+      <div style="padding:16px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:500;">Analyse générée par Claude ✦</div>
+        ${resume}
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost">Exporter en PDF</button>
+        <button class="btn btn-primary" onclick="showToast('✓', 'Rapport envoyé par email !')">Renvoyer par email</button>
+      </div>
+    </div>
+  `;
+}
+
+function rafraichirDashboard() {
+  // Mise à jour légère du dashboard si visible
+  if (document.getElementById('page-dashboard').classList.contains('active') && activeCampaign) {
+    const relancesTotal = activeCampaign.contacts.reduce((s, c) => s + (c.relancesEnvoyees || 0), 0);
+    const reponsesTotal = activeCampaign.contacts.filter(c => c.repondu).length;
+    // Simple update des métriques si elles existent
+    const vals = document.querySelectorAll('.metric-value');
+    if (vals[2]) vals[2].textContent = relancesTotal;
+  }
+}
+
+// ─── PERSISTANCE CAMPAGNES ────────────────────────────────────────────
+let allCampaigns = JSON.parse(localStorage.getItem('prospai_campaigns') || '[]');
+
+function sauvegarderCampagnes() {
+  try { localStorage.setItem('prospai_campaigns', JSON.stringify(allCampaigns)); } catch(e) {}
+}
+
+function ajouterCampagne(campaign) {
+  allCampaigns.unshift(campaign);
+  sauvegarderCampagnes();
+  rafraichirDashboard();
+}
+
+// ─── DASHBOARD LIVE ───────────────────────────────────────────────────
+function rafraichirDashboard() {
+  const list = document.getElementById('dash-campaign-list');
+  const empty = document.getElementById('dash-empty');
+  if (!list) return;
+
+  // Fusionner campagne active + historique
+  const toutes = activeCampaign
+    ? [buildCampagneActive(activeCampaign), ...allCampaigns]
+    : allCampaigns;
+
+  // Métriques globales
+  const totalEnvoyes = toutes.reduce((s, c) => s + (c.stats?.envoyes || 0), 0);
+  const totalReponses = toutes.reduce((s, c) => s + (c.stats?.reponses || 0), 0);
+  const totalRelances = toutes.reduce((s, c) => s + (c.stats?.relances || 0), 0);
+  const actives = toutes.filter(c => c.statut === 'active' || c.statut === 'relances').length;
+  const taux = totalEnvoyes > 0 ? Math.round((totalReponses / totalEnvoyes) * 100) : 0;
+
+  // Mise à jour métriques
+  setEl('dash-envoyes', totalEnvoyes || '—');
+  setEl('dash-envoyes-sub', totalEnvoyes > 0 ? 'total toutes campagnes' : 'aucune campagne');
+  setEl('dash-taux', totalEnvoyes > 0 ? taux + '%' : '—');
+  setEl('dash-taux-sub', totalEnvoyes > 0 ? (taux > 15 ? '↑ au-dessus de la moyenne' : 'moyenne secteur : 12-15%') : 'toutes campagnes');
+  setEl('dash-relances', totalRelances || '—');
+  setEl('dash-actives', actives || '—');
+  setEl('dash-actives-sub', `sur ${toutes.length} au total`);
+
+  // Bandeau live
+  const banner = document.getElementById('dash-live-banner');
+  if (activeCampaign && banner) {
+    banner.style.display = 'flex';
+    const c = activeCampaign.contacts || [];
+    const rep = c.filter(x => x.repondu).length;
+    const rel = c.reduce((s, x) => s + (x.relancesEnvoyees || 0), 0);
+    setEl('live-banner-title', `🟢 "${activeCampaign.nom}" — surveillance active`);
+    setEl('live-banner-sub', `Prochain check dans ~10 min · Relances dans ${activeCampaign.config?.delai || 7} jours`);
+    setEl('live-banner-stats', `${rep} réponses · ${rel} relances`);
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+
+  // Liste campagnes
+  if (toutes.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  // Garder uniquement les cartes campagnes (pas l'empty)
+  Array.from(list.children).forEach(el => {
+    if (el.id !== 'dash-empty') el.remove();
+  });
+
+  toutes.forEach(camp => {
+    const card = buildCampagneCard(camp);
+    list.appendChild(card);
+  });
+
+  setEl('dash-last-update', `Mis à jour à ${new Date().toLocaleTimeString()}`);
+}
+
+function buildCampagneActive(ac) {
+  const contacts = ac.contacts || [];
+  const envoyes = contacts.filter(c => c.valid).length;
+  const reponses = contacts.filter(c => c.repondu).length;
+  const relances = contacts.reduce((s, c) => s + (c.relancesEnvoyees || 0), 0);
+  const avecRelances = contacts.filter(c => (c.relancesEnvoyees || 0) > 0).length;
+  const statut = avecRelances > 0 ? 'relances' : 'active';
+
+  return {
+    nom: ac.nom,
+    statut,
+    dateDebut: ac.dateDebut,
+    config: ac.config,
+    stats: { total: envoyes, envoyes, reponses, relances }
+  };
+}
+
+function buildCampagneCard(camp) {
+  const s = camp.stats || {};
+  const total = s.total || 0;
+  const envoyes = s.envoyes || 0;
+  const reponses = s.reponses || 0;
+  const relances = s.relances || 0;
+  const pct = total > 0 ? Math.round((envoyes / total) * 100) : 100;
+
+  const statutConfig = {
+    active:   { label: 'En cours',        cls: 'badge-active',  fillCls: '' },
+    relances: { label: 'Relances actives', cls: 'badge-relance', fillCls: 'orange' },
+    terminee: { label: 'Terminée',         cls: 'badge-done',    fillCls: 'done' }
+  };
+  const st = statutConfig[camp.statut] || statutConfig.terminee;
+
+  const date = camp.dateDebut
+    ? new Date(camp.dateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    : '';
+  const sousTitre = camp.statut === 'terminee'
+    ? `Terminée · Rapport envoyé`
+    : camp.statut === 'relances'
+    ? `Tous les emails envoyés · Relances en cours`
+    : `Lancée le ${date} · Relance dans ${camp.config?.delai || 7} jours`;
+
+  const prochain = camp.statut !== 'terminee' && camp.config?.delai
+    ? `<div style="margin-top:10px;font-size:11px;color:var(--text3);">
+        ⏱ Prochaine relance dans <strong style="color:var(--orange)">${camp.config.delai} jours</strong> si pas de réponse
+       </div>` : '';
+
+  const div = document.createElement('div');
+  div.className = 'campaign-card';
+  div.innerHTML = `
+    <div class="campaign-top">
+      <div>
+        <div class="campaign-name">${camp.nom}</div>
+        <div class="campaign-date">${sousTitre}</div>
+      </div>
+      <span class="badge ${st.cls}">${st.label}</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-info"><span>${envoyes} / ${total} emails envoyés</span><span>${pct}%</span></div>
+      <div class="progress-bar"><div class="progress-fill ${st.fillCls}" style="width:${pct}%"></div></div>
+    </div>
+    <div class="campaign-stats">
+      <div class="stat"><div class="stat-val">${total}</div><div class="stat-label">contacts</div></div>
+      <div class="stat"><div class="stat-val">${envoyes}</div><div class="stat-label">envoyés</div></div>
+      <div class="stat"><div class="stat-val">${reponses}</div><div class="stat-label">réponses</div></div>
+      <div class="stat"><div class="stat-val">${relances}</div><div class="stat-label">relances</div></div>
+    </div>
+    ${prochain}
+  `;
+  return div;
+}
+
+function setEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// Rafraîchir le dashboard toutes les 30s si actif
+setInterval(() => {
+  if (document.getElementById('page-dashboard')?.classList.contains('active')) {
+    rafraichirDashboard();
+  }
+}, 30000);
+
+// Init au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  rafraichirDashboard();
+
+  const delaiInput = document.getElementById('camp-delai');
+  if (delaiInput) {
+    delaiInput.addEventListener('input', () => {
+      const el = document.getElementById('relance-delai-label');
+      if (el) el.textContent = delaiInput.value + ' jours';
+    });
+  }
+  document.getElementById('notif-track')?.classList.add('on');
+});
+
+// Hook : quand une campagne se termine, la sauvegarder
+const _origVerifier = verifierFinDeCampagne;
+async function verifierFinDeCampagne(config, intervalId) {
+  if (!activeCampaign) return;
+  const contacts = activeCampaign.contacts.filter(c => c.valid);
+  const tousTraites = contacts.every(c =>
+    c.repondu || (c.relancesEnvoyees || 0) >= parseInt(config.relancesMax)
+  );
+  if (!tousTraites) return;
+
+  clearInterval(intervalId);
+  showToast('✦', 'Campagne terminée ! Génération du compte-rendu...');
+
+  const stats = {
+    total: contacts.length,
+    envoyes: contacts.length,
+    reponses: contacts.filter(c => c.repondu).length,
+    relances: contacts.reduce((s, c) => s + (c.relancesEnvoyees || 0), 0),
+    sansReponse: contacts.filter(c => !c.repondu).length,
+    duree: Math.round((Date.now() - new Date(activeCampaign.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
+  };
+
+  await genererCompteRendu(config, contacts);
+
+  // Sauvegarder dans l'historique
+  ajouterCampagne({
+    nom: activeCampaign.nom,
+    statut: 'terminee',
+    dateDebut: activeCampaign.dateDebut,
+    dateFin: new Date().toISOString(),
+    config,
+    stats
+  });
+
+  activeCampaign = null;
+  rafraichirDashboard();
+}
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
