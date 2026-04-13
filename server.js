@@ -257,7 +257,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── 6. PAGE PRINCIPALE ──────────────────────────────────────────────
+  // ── 6. POLITIQUE DE CONFIDENTIALITÉ ────────────────────────────────
+  if (pathname === '/privacy') {
+    const filePath = path.join(__dirname, 'privacy.html');
+    fs.readFile(filePath, (err, data) => {
+      if (err) { res.writeHead(500); res.end('Erreur serveur'); return; }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+    return;
+  }
+
+  // ── 7. PAGE PRINCIPALE ──────────────────────────────────────────────
   if (pathname === '/' || pathname === '/index.html') {
     const filePath = path.join(__dirname, 'prospai.html');
     fs.readFile(filePath, (err, data) => {
