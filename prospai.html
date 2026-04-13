@@ -262,22 +262,54 @@ tr:hover td { background: var(--bg3); color: var(--text); }
     </div>
   </nav>
   <div class="sidebar-footer">
-    <div class="user-badge">
-      <div class="user-avatar">JD</div>
+    <div class="user-badge" onclick="showLogin()" style="cursor:pointer">
+      <div class="user-avatar" id="user-avatar">?</div>
       <div>
-        <div class="user-name">Jean Dupont</div>
-        <div class="user-plan">Plan Pro · Gmail connecté</div>
+        <div class="user-name" id="user-name">Se connecter</div>
+        <div class="user-plan" id="user-plan">Cliquez pour configurer</div>
       </div>
     </div>
   </div>
 </aside>
+
+<!-- LOGIN MODAL -->
+<div id="login-modal" style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-width:440px;overflow:hidden;">
+    <div style="padding:28px 28px 0;">
+      <div style="font-size:22px;font-weight:600;color:var(--text);margin-bottom:6px;">Prosp<span style="color:var(--accent)">AI</span></div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:24px;">Configurez votre espace avant de commencer</div>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--text2);font-weight:500;display:block;margin-bottom:6px;">Votre prénom</label>
+        <input type="text" id="login-prenom" placeholder="ex : Sophie" class="form-input" style="width:100%">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--text2);font-weight:500;display:block;margin-bottom:6px;">Votre nom</label>
+        <input type="text" id="login-nom" placeholder="ex : Martin" class="form-input" style="width:100%">
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="font-size:12px;color:var(--text2);font-weight:500;display:block;margin-bottom:6px;">Votre adresse Gmail</label>
+        <input type="email" id="login-email" placeholder="ex : sophie.martin@gmail.com" class="form-input" style="width:100%">
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;">C'est depuis cette adresse que vos emails de prospection seront envoyés.</div>
+      </div>
+    </div>
+      <div style="padding:0 28px 28px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="sauvegarderProfil()" style="width:100%">Continuer →</button>
+        <button onclick="connecterGmail()" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 0 0 0 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067z"/></svg>
+          Connecter mon Gmail pour l'envoi
+        </button>
+        <div id="gmail-connected-badge" style="display:none;text-align:center;font-size:12px;color:var(--accent);">✓ Gmail connecté</div>
+      </div>
+  </div>
+</div>
 
 <!-- MAIN -->
 <main class="main">
   <div class="topbar">
     <span class="page-title" id="page-title">Tableau de bord</span>
     <div class="topbar-actions">
-      <div class="notif"><div class="notif-dot"></div>Gmail connecté</div>
+      <div class="notif" id="gmail-status" style="display:none"><div class="notif-dot"></div><span id="gmail-email-display">Gmail connecté</span></div>
       <button class="btn btn-primary" onclick="showPage('nouvelle', document.querySelector('[onclick*=nouvelle]'))">+ Nouvelle campagne</button>
     </div>
   </div>
@@ -551,23 +583,11 @@ tr:hover td { background: var(--bg3); color: var(--text); }
 
     <!-- RAPPORTS -->
     <div class="page" id="page-rapports">
-      <div class="form-card">
-        <div class="form-section-title">Rapport — RH & Recruteurs, Fév. 2025</div>
-        <div class="metrics-grid" style="margin-bottom:20px">
-          <div class="metric-card"><div class="metric-label">Contacts touchés</div><div class="metric-value">89</div></div>
-          <div class="metric-card"><div class="metric-label">Taux de réponse</div><div class="metric-value">21%</div></div>
-          <div class="metric-card"><div class="metric-label">Relances auto</div><div class="metric-value">34</div></div>
-          <div class="metric-card"><div class="metric-label">Durée campagne</div><div class="metric-value">18j</div></div>
-        </div>
-        <div style="padding: 16px; background: var(--bg3); border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 16px;">
-          <div style="font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 500;">Résumé généré par Claude</div>
-          La campagne a atteint 89 contacts dans le secteur RH sur 18 jours. Le taux de réponse de 21% est supérieur à la moyenne du secteur (15%). Les relances automatiques ont généré 6 réponses supplémentaires soit +32% de leads additionnels. Les objets contenant le mot "recrutement" ont obtenu un meilleur taux d'ouverture. <strong style="color:var(--text)">Recommandation :</strong> tester un objet plus direct pour la prochaine campagne et réduire le délai de relance à 5 jours.
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-ghost">Exporter en PDF</button>
-          <button class="btn btn-primary">Envoyer par email</button>
-        </div>
+      <div id="rapports-empty" style="text-align:center;padding:64px;color:var(--text3);font-size:13px;border:1px dashed var(--border2);border-radius:var(--radius);">
+        Aucun rapport disponible pour le moment.<br>
+        <span style="color:var(--text3);font-size:12px;margin-top:8px;display:block;">Les rapports sont générés automatiquement à la fin de chaque campagne.</span>
       </div>
+      <div id="rapports-list" style="display:flex;flex-direction:column;gap:16px;"></div>
     </div>
 
   </div>
@@ -1145,7 +1165,8 @@ async function sendEmails(config, emails) {
     addLog(`→ Envoi à ${contact.prenom} ${contact.nom} <${contact.email}>...`);
 
     try {
-      await envoyerEmailGmail({ to: contact.email, subject, body: emailBody });
+      const from = userProfile?.email || '';
+      await envoyerEmailGmailReel({ from, to: contact.email, subject, body: emailBody });
       sent++;
       addLog(`✓ Envoyé à ${contact.prenom} ${contact.nom}`, 'ok');
     } catch(e) {
@@ -1276,7 +1297,8 @@ async function envoyerRelance(contact, config, numRelance) {
       ? (document.getElementById('relance-objet')?.value || `Suite à mon message — ${contact.entreprise}`)
       : `Relance — ${contact.prenom} ${contact.nom}`;
 
-    await envoyerEmailGmail({ to: contact.email, subject, body: relanceBody });
+    const from = userProfile?.email || '';
+    await envoyerEmailGmailReel({ from, to: contact.email, subject, body: relanceBody });
 
     contact.relancesEnvoyees = (contact.relancesEnvoyees || 0) + 1;
     contact.dernièreRelance = new Date().toISOString();
@@ -1403,27 +1425,8 @@ L'équipe ProspAI`
 
 // ─── 8. METTRE À JOUR L'UI ────────────────────────────────────────────
 function mettreAJourRapport(config, stats, tauxReponse, resume) {
-  const page = document.getElementById('page-rapports');
-  if (!page) return;
-  page.innerHTML = `
-    <div class="form-card">
-      <div class="form-section-title">Rapport — ${config.nom}</div>
-      <div class="metrics-grid" style="margin-bottom:20px">
-        <div class="metric-card"><div class="metric-label">Contacts touchés</div><div class="metric-value">${stats.total}</div></div>
-        <div class="metric-card"><div class="metric-label">Taux de réponse</div><div class="metric-value">${tauxReponse}%</div><div class="metric-sub ${tauxReponse > 15 ? 'up' : ''}">Moy. secteur : 12-15%</div></div>
-        <div class="metric-card"><div class="metric-label">Relances auto</div><div class="metric-value">${stats.relances}</div></div>
-        <div class="metric-card"><div class="metric-label">Durée campagne</div><div class="metric-value">${stats.duree}j</div></div>
-      </div>
-      <div style="padding:16px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;">
-        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:500;">Analyse générée par Claude ✦</div>
-        ${resume}
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-ghost">Exporter en PDF</button>
-        <button class="btn btn-primary" onclick="showToast('✓', 'Rapport envoyé par email !')">Renvoyer par email</button>
-      </div>
-    </div>
-  `;
+  const rapport = { nom: config.nom, stats, tauxReponse, resume, date: new Date().toISOString() };
+  ajouterRapport(rapport);
 }
 
 function rafraichirDashboard() {
@@ -1437,7 +1440,162 @@ function rafraichirDashboard() {
   }
 }
 
-// ─── PERSISTANCE CAMPAGNES ────────────────────────────────────────────
+// ─── OAUTH GMAIL ─────────────────────────────────────────────────────
+function connecterGmail() {
+  // Sauvegarder d'abord le profil si rempli
+  const prenom = document.getElementById('login-prenom').value.trim();
+  const nom = document.getElementById('login-nom').value.trim();
+  const email = document.getElementById('login-email').value.trim();
+  if (prenom && email) {
+    userProfile = { prenom, nom, email, gmailConnected: false };
+    localStorage.setItem('prospai_user', JSON.stringify(userProfile));
+  }
+  // Rediriger vers le flow OAuth Google
+  window.location.href = '/auth/gmail';
+}
+
+function verifierRetourOAuth() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('gmail_connected') === 'true') {
+    const email = params.get('email');
+    if (email) {
+      // Mettre à jour le profil avec l'email Gmail vérifié
+      if (!userProfile) userProfile = {};
+      userProfile.email = email;
+      userProfile.gmailConnected = true;
+      if (!userProfile.prenom) userProfile.prenom = email.split('@')[0];
+      localStorage.setItem('prospai_user', JSON.stringify(userProfile));
+
+      // Nettoyer l'URL
+      window.history.replaceState({}, '', '/');
+
+      // Fermer le modal et appliquer
+      document.getElementById('login-modal').style.display = 'none';
+      appliquerProfil(userProfile);
+      document.getElementById('gmail-connected-badge').style.display = 'block';
+      showToast('✓', `Gmail connecté : ${email}`);
+    }
+  }
+}
+
+// ─── ENVOI EMAIL VIA GMAIL API RÉELLE ────────────────────────────────
+async function envoyerEmailGmailReel({ from, to, subject, body }) {
+  const res = await fetch('/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to, subject, text: body })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur envoi Gmail');
+  return data;
+}
+
+// ─── VÉRIFIER RÉPONSES VIA GMAIL API RÉELLE ──────────────────────────
+async function verifierReponsesGmailReel(fromEmail, campaignName) {
+  try {
+    const res = await fetch('/api/check-replies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromEmail,
+        query: `in:inbox subject:${campaignName} newer_than:30d`
+      })
+    });
+    const data = await res.json();
+    return data.messages || [];
+  } catch(e) {
+    return [];
+  }
+}
+
+
+let userProfile = JSON.parse(localStorage.getItem('prospai_user') || 'null');
+
+function initProfil() {
+  if (!userProfile) {
+    document.getElementById('login-modal').style.display = 'flex';
+  } else {
+    document.getElementById('login-modal').style.display = 'none';
+    appliquerProfil(userProfile);
+  }
+}
+
+function sauvegarderProfil() {
+  const prenom = document.getElementById('login-prenom').value.trim();
+  const nom = document.getElementById('login-nom').value.trim();
+  const email = document.getElementById('login-email').value.trim();
+
+  if (!prenom || !email) { showToast('⚠', 'Remplissez au moins votre prénom et votre email'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('⚠', 'Email invalide'); return; }
+
+  userProfile = { prenom, nom, email };
+  localStorage.setItem('prospai_user', JSON.stringify(userProfile));
+  document.getElementById('login-modal').style.display = 'none';
+  appliquerProfil(userProfile);
+  showToast('✓', `Bienvenue ${prenom} ! Votre espace est prêt.`);
+}
+
+function appliquerProfil(p) {
+  const initiales = (p.prenom[0] + (p.nom?.[0] || '')).toUpperCase();
+  document.getElementById('user-avatar').textContent = initiales;
+  document.getElementById('user-name').textContent = `${p.prenom} ${p.nom || ''}`.trim();
+  document.getElementById('user-plan').textContent = p.email;
+  document.getElementById('gmail-status').style.display = 'flex';
+  document.getElementById('gmail-email-display').textContent = p.email;
+}
+
+function showLogin() {
+  if (userProfile) {
+    // Si déjà connecté, proposer de modifier
+    document.getElementById('login-prenom').value = userProfile.prenom || '';
+    document.getElementById('login-nom').value = userProfile.nom || '';
+    document.getElementById('login-email').value = userProfile.email || '';
+  }
+  document.getElementById('login-modal').style.display = 'flex';
+}
+
+// ─── RAPPORTS RÉELS ───────────────────────────────────────────────────
+let allReports = JSON.parse(localStorage.getItem('prospai_reports') || '[]');
+
+function ajouterRapport(rapport) {
+  allReports.unshift(rapport);
+  localStorage.setItem('prospai_reports', JSON.stringify(allReports));
+  afficherRapports();
+}
+
+function afficherRapports() {
+  const empty = document.getElementById('rapports-empty');
+  const list = document.getElementById('rapports-list');
+  if (!list) return;
+
+  if (allReports.length === 0) {
+    if (empty) empty.style.display = 'block';
+    list.innerHTML = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  list.innerHTML = allReports.map((r, i) => `
+    <div class="form-card">
+      <div class="form-section-title" style="margin-bottom:16px;">Rapport — ${r.nom}</div>
+      <div class="metrics-grid" style="margin-bottom:16px;">
+        <div class="metric-card"><div class="metric-label">Contacts touchés</div><div class="metric-value">${r.stats.total}</div></div>
+        <div class="metric-card"><div class="metric-label">Taux de réponse</div><div class="metric-value">${r.tauxReponse}%</div><div class="metric-sub ${r.tauxReponse > 15 ? 'up' : ''}">Moy. : 12-15%</div></div>
+        <div class="metric-card"><div class="metric-label">Relances auto</div><div class="metric-value">${r.stats.relances}</div></div>
+        <div class="metric-card"><div class="metric-label">Durée</div><div class="metric-value">${r.stats.duree}j</div></div>
+      </div>
+      <div style="padding:14px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;">
+        <div style="font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:500;">Analyse générée par Claude ✦</div>
+        ${r.resume}
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="showToast('✓', 'Rapport renvoyé par email !')">Renvoyer par email</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+
 let allCampaigns = JSON.parse(localStorage.getItem('prospai_campaigns') || '[]');
 
 function sauvegarderCampagnes() {
@@ -1596,6 +1754,9 @@ setInterval(() => {
 
 // Init au chargement
 document.addEventListener('DOMContentLoaded', () => {
+  verifierRetourOAuth();
+  initProfil();
+  afficherRapports();
   rafraichirDashboard();
 
   const delaiInput = document.getElementById('camp-delai');
