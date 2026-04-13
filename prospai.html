@@ -1608,43 +1608,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('notif-track')?.classList.add('on');
 });
 
-// Hook : quand une campagne se termine, la sauvegarder
-const _origVerifier = verifierFinDeCampagne;
-async function verifierFinDeCampagne(config, intervalId) {
-  if (!activeCampaign) return;
-  const contacts = activeCampaign.contacts.filter(c => c.valid);
-  const tousTraites = contacts.every(c =>
-    c.repondu || (c.relancesEnvoyees || 0) >= parseInt(config.relancesMax)
-  );
-  if (!tousTraites) return;
 
-  clearInterval(intervalId);
-  showToast('✦', 'Campagne terminée ! Génération du compte-rendu...');
-
-  const stats = {
-    total: contacts.length,
-    envoyes: contacts.length,
-    reponses: contacts.filter(c => c.repondu).length,
-    relances: contacts.reduce((s, c) => s + (c.relancesEnvoyees || 0), 0),
-    sansReponse: contacts.filter(c => !c.repondu).length,
-    duree: Math.round((Date.now() - new Date(activeCampaign.dateDebut).getTime()) / (1000 * 60 * 60 * 24))
-  };
-
-  await genererCompteRendu(config, contacts);
-
-  // Sauvegarder dans l'historique
-  ajouterCampagne({
-    nom: activeCampaign.nom,
-    statut: 'terminee',
-    dateDebut: activeCampaign.dateDebut,
-    dateFin: new Date().toISOString(),
-    config,
-    stats
-  });
-
-  activeCampaign = null;
-  rafraichirDashboard();
-}
+function showToast(icon, msg) {
   const t = document.getElementById('toast');
   document.getElementById('toast-icon').textContent = icon;
   document.getElementById('toast-msg').textContent = msg;
